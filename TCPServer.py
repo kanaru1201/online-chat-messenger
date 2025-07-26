@@ -1,13 +1,14 @@
 import socket
 import tcp_protocol
 import secrets
+from state import rooms, tokens
 
-class Server:
+class TCPServer:
     def __init__(self, host='localhost', port=9090):
         self.host = host
         self.port = port
-        self.rooms = {}  # {room_name: {'host': username, 'members': [usernames]}}
-        self.tokens = {}  # {token: (room_name, username, is_host)}
+        # self.rooms = {}  # {room_name: {'host': username, 'members': [usernames]}}
+        # self.tokens = {}  # {token: (room_name, username, is_host)}
         self.room_tokens = {}  # {room_name: host_token} - ルーム名とホストトークンのマッピング
     
     def generate_token(self):
@@ -44,13 +45,13 @@ class Server:
                 if state == tcp_protocol.STATE_REQUEST:
                     if operation == tcp_protocol.OP_CREATE_ROOM:
                         # 既に存在するルームがないかチェック
-                        if room_name in self.rooms:
+                        if room_name in rooms:
                             print(f"[ERROR] ルーム {room_name} は既に存在しています")
                             self.send_error_response(client_socket, room_name, operation, "このルームは既に存在しています")
                             break
                     elif operation == tcp_protocol.OP_JOIN_ROOM:
                         # 存在しないルームかどうかチェック
-                        if room_name not in self.rooms:
+                        if room_name not in rooms:
                             print(f"[ERROR] ルーム {room_name} は存在しません")
                             self.send_error_response(client_socket, room_name, operation, "このルームは存在しません")
                             break
@@ -108,16 +109,16 @@ class Server:
 
             # ホストの場合はhostとmembers双方をクラス変数に格納する
             if is_host:
-                self.rooms[room_name] = {
+                rooms[room_name] = {
                     'host': username,
                     'members': [username]
                 }
             # メンバーの場合はmembersのみをクラス変数に格納する
             else:
-                self.rooms[room_name]['members'].append(username)
+                rooms[room_name]['members'].append(username)
 
             # トークン情報を保存する
-            self.tokens[token] = (room_name, username, is_host)
+            tokens[token] = (room_name, username, is_host)
 
             header = tcp_protocol.encode_tcrp_header(
                 len(room_name_bytes), 
@@ -178,7 +179,3 @@ class Server:
         finally:
             server_socket.close()
             print("サーバーが停止しました")
-
-if __name__ == "__main__":
-    server = Server()
-    server.start()

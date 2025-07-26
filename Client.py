@@ -1,4 +1,5 @@
 import socket
+import threading
 
 import tcp_protocol
 
@@ -123,16 +124,50 @@ class Client:
         else:
             print("接続されていません")
 
+    # TODO:後ほど改めて実装
+    def start_udp_chat(self, room_name, username, server_ip, udp_port=9999):
+        udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        server_addr = (server_ip, udp_port)
+
+        # TODO:後ほど改めて実装
+        def receive_messages():
+            """メッセージ受信用の内部専用関数"""
+            while True:
+                try:
+                    data, _ = udp_sock.recvfrom(4096)
+                    print(f"\n{data.decode('utf-8')}\n> ", end='', flush=True)
+                except Exception:
+                    break
+        
+        # TODO:後ほど改めて実装
+        def send_messages():
+            """メッセージ送信用の内部専用関数"""
+            while True:
+                msg = input("> ").strip()
+                if msg.lower() == "exit":
+                    print("チャットを終了します。")
+                    udp_sock.close()
+                    break
+                # 送信フォーマット: room|token|username|message
+                packet = f"{room_name}|{self.token}|{username}|{msg}"
+                udp_sock.sendto(packet.encode('utf-8'), server_addr)
+        
+        # チャット参加通知
+        join_packet = f"{room_name}|{self.token}|{username}|__JOIN__"
+        udp_sock.sendto(join_packet.encode('utf-8'), server_addr)
+
+        print(f"UDPチャットモードに入りました。'exit' と入力で終了します。")
+        
+        recv_thread = threading.Thread(target=receive_messages, daemon=True)
+        recv_thread.start()
+        send_messages()
+
 def main():
     client = Client()
     
     server_address = input("サーバーアドレスを入力してください (デフォルト: localhost): ").strip()
     if not server_address:
         server_address = 'localhost'
-    
-    if not client.connect(server_address, 9090):
-        return
-    
     try:
         while True:
             print("\n=== クライアント ===")
@@ -142,40 +177,32 @@ def main():
             
             choice = input("選択してください (1-3): ").strip()
             
-            if choice == '1':
+            if choice in ['1', '2']:
                 room_name = input("ルーム名を入力してください: ").strip()
                 username = input("ユーザー名を入力してください: ").strip()
-                if room_name and username:
-                    # 2度目以降の入力の際のエラー回避のため、ルーム名とユーザー名の入力の度に接続→切断を行う
-                    if client.connect(server_address, 9090):
-                        if client.send_request(room_name, tcp_protocol.OP_CREATE_ROOM, username):
-                            client.receive_response()
-                    client.disconnect()
-                else:
+                if not (room_name and username):
                     print("ルーム名とユーザー名を入力してください")
-                    
-            elif choice == '2':
-                room_name = input("参加するルーム名を入力してください: ").strip()
-                username = input("ユーザー名を入力してください: ").strip()
-                if room_name and username:
-                    # 2度目以降の入力の際のエラー回避のため、ルーム名とユーザー名の入力の度に接続→切断を行う
-                    if client.connect(server_address, 9090):
-                        if client.send_request(room_name, tcp_protocol.OP_JOIN_ROOM, username):
-                            client.receive_response()
-                    client.disconnect()
+                    continue
+
+                if client.connect(server_address, 9090):
+                    operation = tcp_protocol.OP_CREATE_ROOM if choice == '1' else tcp_protocol.OP_JOIN_ROOM
+                    if client.send_request(room_name, operation, username):
+                        if client.receive_response():
+                            client.disconnect()
+                            # TCP通信成功→UDPチャット開始
+                            client.start_udp_chat(room_name, username, server_address)
+                            break  # チャット終了後はプログラム終了
+                    else:
+                        client.disconnect()
                 else:
-                    print("ルーム名とユーザー名を入力してください")
-                    
+                    print("サーバーに接続できませんでした")
+
             elif choice == '3':
                 break
             else:
                 print("1-3の数字を入力してください")
-    
     except KeyboardInterrupt:
-        print("\n終了します...")
-    
-    finally:
-        client.disconnect()
+        print("\nクライアントを終了します")
 
 if __name__ == "__main__":
     main()
