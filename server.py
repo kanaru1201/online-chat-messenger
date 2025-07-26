@@ -42,10 +42,31 @@ class Server:
 
                 # リクエスト処理（STATE_REQUESTの場合のみ）
                 if state == tcp_protocol.STATE_REQUEST:
+                    if operation == tcp_protocol.OP_CREATE_ROOM:
+                        # 既に存在するルームがないかチェック
+                        if room_name in self.rooms:
+                            print(f"[ERROR] ルーム {room_name} は既に存在しています")
+                            self.send_error_response(client_socket, room_name, operation, "このルームは既に存在しています")
+                            break
+                    elif operation == tcp_protocol.OP_JOIN_ROOM:
+                        # 存在しないルームかどうかチェック
+                        if room_name not in self.rooms:
+                            print(f"[ERROR] ルーム {room_name} は存在しません")
+                            self.send_error_response(client_socket, room_name, operation, "このルームは存在しません")
+                            break
+
                     # 1. COMPLIANCE応答を送信
-                    self.send_compliance_response(client_socket, room_name, operation)
+                    isCompliance = self.send_compliance_response(client_socket, room_name, operation)
+                    if not isCompliance:
+                        print(f"COMPLIANCE応答送信に失敗しました")
+                        break
                     # 2. COMPLETE応答を送信
-                    self.send_complete_response(client_socket, room_name, operation)
+                    isComplete = self.send_complete_response(client_socket, room_name, operation, payload)
+                    if not isComplete:
+                        print(f"COMPLETE応答送信に失敗しました")
+                        break
+                    print("すべての応答を送信したので接続を終了します")
+                    break  # 明示的に終了させる
                 
         except Exception as e:
             print(f"エラー: {e}")
@@ -69,16 +90,34 @@ class Server:
             packet = header + room_name_bytes + status_bytes
             client_socket.send(packet)
             print(f"COMPLIANCE応答送信: ステータス={status_code}")
+            return True
             
         except Exception as e:
             print(f"COMPLIANCE応答送信エラー: {e}")
+            return False
     
-    def send_complete_response(self, client_socket, room_name, operation):
+    def send_complete_response(self, client_socket, room_name, operation, username):
         """COMPLETE応答を送信"""
         try:
             room_name_bytes = room_name.encode('utf-8')
             token = self.generate_token()
             token_bytes = token.encode('utf-8')
+
+            # ルームを作成する場合はそのユーザーをホストとみなす
+            is_host = (operation == tcp_protocol.OP_CREATE_ROOM)
+
+            # ホストの場合はhostとmembers双方をクラス変数に格納する
+            if is_host:
+                self.rooms[room_name] = {
+                    'host': username,
+                    'members': [username]
+                }
+            # メンバーの場合はmembersのみをクラス変数に格納する
+            else:
+                self.rooms[room_name]['members'].append(username)
+
+            # トークン情報を保存する
+            self.tokens[token] = (room_name, username, is_host)
 
             header = tcp_protocol.encode_tcrp_header(
                 len(room_name_bytes), 
@@ -89,9 +128,30 @@ class Server:
             packet = header + room_name_bytes + token_bytes
             client_socket.send(packet)
             print(f"COMPLETE応答送信: トークン={token}")
+            return True
             
         except Exception as e:
             print(f"COMPLETE応答送信エラー: {e}")
+            return False
+
+    def send_error_response(self, client_socket, room_name, operation, message):
+        """エラー応答を送信（STATE=ERRORなど任意の番号）"""
+        try:
+            room_name_bytes = room_name.encode('utf-8')
+            message_bytes = message.encode('utf-8')
+
+            header = tcp_protocol.encode_tcrp_header(
+                len(room_name_bytes),
+                int(operation),
+                tcp_protocol.STATE_ERROR, # エラー用の状態コード
+                len(message_bytes)
+            )
+            packet = header + room_name_bytes + message_bytes
+            client_socket.send(packet)
+            print(f"[エラー応答] {message}")
+        except Exception as e:
+            print(f"エラー応答送信失敗: {e}")
+
     
     def start(self):
         """サーバー開始"""

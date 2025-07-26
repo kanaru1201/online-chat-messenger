@@ -102,6 +102,10 @@ class Client:
                 self.token = token
                 return True
             
+            elif state == tcp_protocol.STATE_ERROR:
+                print(f"[サーバーエラー応答] {payload}")
+                return False
+            
         except Exception as e:
             print(f"受信エラー: {e}")
             return False
@@ -142,8 +146,11 @@ def main():
                 room_name = input("ルーム名を入力してください: ").strip()
                 username = input("ユーザー名を入力してください: ").strip()
                 if room_name and username:
-                    if client.send_request(room_name, tcp_protocol.OP_CREATE_ROOM, username):
-                        client.receive_response()
+                    # 2度目以降の入力の際のエラー回避のため、ルーム名とユーザー名の入力の度に接続→切断を行う
+                    if client.connect(server_address, 9090):
+                        if client.send_request(room_name, tcp_protocol.OP_CREATE_ROOM, username):
+                            client.receive_response()
+                    client.disconnect()
                 else:
                     print("ルーム名とユーザー名を入力してください")
                     
@@ -151,14 +158,16 @@ def main():
                 room_name = input("参加するルーム名を入力してください: ").strip()
                 username = input("ユーザー名を入力してください: ").strip()
                 if room_name and username:
-                    if client.send_request(room_name, tcp_protocol.OP_JOIN_ROOM, username):
-                        client.receive_response()
+                    # 2度目以降の入力の際のエラー回避のため、ルーム名とユーザー名の入力の度に接続→切断を行う
+                    if client.connect(server_address, 9090):
+                        if client.send_request(room_name, tcp_protocol.OP_JOIN_ROOM, username):
+                            client.receive_response()
+                    client.disconnect()
                 else:
                     print("ルーム名とユーザー名を入力してください")
                     
             elif choice == '3':
                 break
-                
             else:
                 print("1-3の数字を入力してください")
     

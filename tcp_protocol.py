@@ -8,6 +8,7 @@ OP_JOIN_ROOM = 2    # ルーム参加
 STATE_REQUEST = 0     # リクエスト
 STATE_COMPLIANCE = 1  # 準拠
 STATE_COMPLETE = 2    # 完了
+STATE_ERROR = 9       # エラー
 
 def encode_tcrp_header(room_name_size, operation, state, operation_payload_size):
     """
