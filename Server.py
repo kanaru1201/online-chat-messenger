@@ -1,6 +1,6 @@
 if __name__ == "__main__":
-    from TCPServer import TCPServer  # TCPServerクラスを定義した別ファイルと仮定
-    from UDPServer import UDPServer  # UDPServerクラスを定義した別ファイルと仮定
+    from TCPServer import TCPServer
+    from UDPServer import UDPServer
     import threading
 
     # TCPサーバ起動

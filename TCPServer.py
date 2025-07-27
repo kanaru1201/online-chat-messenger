@@ -7,9 +7,9 @@ class TCPServer:
     def __init__(self, host='localhost', port=9090):
         self.host = host
         self.port = port
+        # NOTE: state.pyで管理するように変更
         # self.rooms = {}  # {room_name: {'host': username, 'members': [usernames]}}
         # self.tokens = {}  # {token: (room_name, username, is_host)}
-        self.room_tokens = {}  # {room_name: host_token} - ルーム名とホストトークンのマッピング
     
     def generate_token(self):
         return secrets.token_hex(16)
