@@ -1,6 +1,5 @@
 import struct
 import json
-import socket
 
 OP_CREATE_ROOM = 1
 OP_JOIN_ROOM = 2
@@ -9,7 +8,7 @@ STATE_REQUEST = 0
 STATE_COMPLIANCE = 1
 STATE_COMPLETE = 2
 
-class TCRPProtocol:
+class TCRProtocol:
     HEADER_SIZE = 32
 
     @staticmethod
@@ -19,7 +18,7 @@ class TCRPProtocol:
 
     @staticmethod
     def decode_tcrp_header(header):
-        if len(header) != TCRPProtocol.HEADER_SIZE:
+        if len(header) != TCRProtocol.HEADER_SIZE:
             raise ValueError("ヘッダーサイズが不正です")
         room_name_size, op, state = struct.unpack('!BBB', header[:3])
         payload_size = int.from_bytes(header[4:], byteorder='big')
@@ -29,18 +28,18 @@ class TCRPProtocol:
     def send_tcrp_message(sock, room_name, operation, state, payload_obj):
         room_name_bytes = room_name.encode('utf-8')
         payload_bytes = json.dumps(payload_obj).encode('utf-8')
-        header = TCRPProtocol.encode_tcrp_header(len(room_name_bytes), operation, state, len(payload_bytes))
+        header = TCRProtocol.encode_tcrp_header(len(room_name_bytes), operation, state, len(payload_bytes))
         sock.sendall(header + room_name_bytes + payload_bytes)
 
     @staticmethod
     def receive_tcrp_message(sock):
-        header = TCRPProtocol._recv_exactly(sock, TCRPProtocol.HEADER_SIZE)
+        header = TCRProtocol._recv_exactly(sock, TCRProtocol.HEADER_SIZE)
         if not header:
             raise ConnectionError("ヘッダー受信中に切断されました")
-        room_name_size, op, state, payload_size = TCRPProtocol.decode_tcrp_header(header)
+        room_name_size, op, state, payload_size = TCRProtocol.decode_tcrp_header(header)
 
-        room_name_bytes = TCRPProtocol._recv_exactly(sock, room_name_size)
-        payload_bytes = TCRPProtocol._recv_exactly(sock, payload_size)
+        room_name_bytes = TCRProtocol._recv_exactly(sock, room_name_size)
+        payload_bytes = TCRProtocol._recv_exactly(sock, payload_size)
 
         room_name = room_name_bytes.decode('utf-8')
         payload_str = payload_bytes.decode('utf-8')
@@ -50,14 +49,14 @@ class TCRPProtocol:
     def build_response_compliance(room_name, operation, success):
         payload = json.dumps({"success": success}).encode('utf-8')
         room_name_bytes = room_name.encode('utf-8')
-        header = TCRPProtocol.encode_tcrp_header(len(room_name_bytes), operation, STATE_COMPLIANCE, len(payload))
+        header = TCRProtocol.encode_tcrp_header(len(room_name_bytes), operation, STATE_COMPLIANCE, len(payload))
         return header + room_name_bytes + payload
 
     @staticmethod
     def build_response_complete(room_name, operation, token):
         payload = json.dumps({"token": token}).encode('utf-8')
         room_name_bytes = room_name.encode('utf-8')
-        header = TCRPProtocol.encode_tcrp_header(len(room_name_bytes), operation, STATE_COMPLETE, len(payload))
+        header = TCRProtocol.encode_tcrp_header(len(room_name_bytes), operation, STATE_COMPLETE, len(payload))
         return header + room_name_bytes + payload
 
     @staticmethod

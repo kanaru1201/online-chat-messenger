@@ -4,7 +4,7 @@ import json
 import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from tcp_protocol import TCRPProtocol, OP_CREATE_ROOM, OP_JOIN_ROOM, STATE_REQUEST, STATE_COMPLIANCE, STATE_COMPLETE
+from tcrp import TCRProtocol, OP_CREATE_ROOM, OP_JOIN_ROOM, STATE_REQUEST, STATE_COMPLIANCE, STATE_COMPLETE
 
 class TCPClient:
     def __init__(self, host='localhost', port=9090):
@@ -48,11 +48,11 @@ class TCPClient:
         username = input("ユーザー名: ").strip()
 
         try:
-            TCRPProtocol.send_tcrp_message(
+            TCRProtocol.send_tcrp_message(
                 self.client_socket, room_name, op, STATE_REQUEST, username
             )
 
-            op_c, state_c, room_c, payload_c = TCRPProtocol.receive_tcrp_message(self.client_socket)
+            op_c, state_c, room_c, payload_c = TCRProtocol.receive_tcrp_message(self.client_socket)
             if state_c != STATE_COMPLIANCE:
                 print("準拠応答受信エラー")
                 return
@@ -62,7 +62,7 @@ class TCPClient:
                 print("操作失敗（サーバー応答）")
                 return
 
-            op_f, state_f, room_f, payload_f = TCRPProtocol.receive_tcrp_message(self.client_socket)
+            op_f, state_f, room_f, payload_f = TCRProtocol.receive_tcrp_message(self.client_socket)
             if state_f == STATE_COMPLETE:
                 complete_result = json.loads(payload_f)
                 token = complete_result.get("token")

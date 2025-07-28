@@ -5,7 +5,7 @@ import os
 import secrets
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from tcp_protocol import TCRPProtocol, OP_CREATE_ROOM, OP_JOIN_ROOM, STATE_REQUEST
+from tcrp import TCRProtocol, OP_CREATE_ROOM, OP_JOIN_ROOM, STATE_REQUEST
 
 class TCPServer:
     def __init__(self, host, port):
@@ -41,7 +41,7 @@ class TCPServer:
 
     def _handle_client(self, client_socket, address):
         try:
-            op, state, room_name, payload = TCRPProtocol.receive_tcrp_message(client_socket)
+            op, state, room_name, payload = TCRProtocol.receive_tcrp_message(client_socket)
 
             if state != STATE_REQUEST:
                 print(f"無効な状態コード: {state}")
@@ -57,8 +57,8 @@ class TCPServer:
                 print(f"その操作コードは使えません（コード: {op}）")
                 return
 
-            compliance = TCRPProtocol.build_response_compliance(room_name, op, int(success))
-            complete = TCRPProtocol.build_response_complete(room_name, op, token if success else "")
+            compliance = TCRProtocol.build_response_compliance(room_name, op, int(success))
+            complete = TCRProtocol.build_response_complete(room_name, op, token if success else "")
             client_socket.sendall(compliance + complete)
 
         except Exception as e:
