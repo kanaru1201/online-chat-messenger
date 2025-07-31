@@ -37,6 +37,9 @@ class UDPChatServer:
         if token not in rooms[room_name]["members"]:
             return False, "[拒否] トークンがルームのメンバーではありません"
 
+        if "address" not in token_info or token_info["address"] is None:
+            return False, f"[拒否] トークン {token} のアドレスが未登録です"
+
         if address[0] != token_info["address"][0]:
             return False, f"[拒否] IPアドレスが一致しません: {address[0]} ≠ {token_info['address'][0]}"
 
@@ -49,6 +52,7 @@ class UDPChatServer:
         while True:
             try:
                 data, address = self.sock.recvfrom(self.MAX_MESSAGE_SIZE)
+                print(f"[DEBUG] UDPパケット受信: {address} サイズ={len(data)}")  # ←追加
             except Exception as e:
                 print(f"[受信エラー] {e}")
                 continue
@@ -57,6 +61,14 @@ class UDPChatServer:
                 if not data:
                     continue
                 room_name,token,message = parse_udp_payload(data)
+
+                if message == "__REGISTER__":
+                    if token in tokens:
+                        tokens[token]["address"] = address
+                        print(f"[登録] トークン {token} にアドレス {address} を登録しました")
+                    else:
+                        print(f"[拒否] 未知のトークン {token} のアドレス登録要求を拒否しました")
+                    continue  # 登録メッセージは中継しない
 
                 is_valid, reason = self.is_valid_request(room_name, token, address)
                 if not is_valid:
@@ -68,6 +80,9 @@ class UDPChatServer:
                     if member_token == token:
                         continue
                     addr = tokens[member_token]["address"]
+                    if not addr:
+                        print(f"[中継スキップ] {tokens[member_token]['username']} のアドレス未登録のためスキップ")
+                        continue
                     payload = build_udp_message(sender, message)
                     self.sock.sendto(payload, addr)
                     print(f"[送信] {tokens[member_token]['username']} へ中継: {message}")

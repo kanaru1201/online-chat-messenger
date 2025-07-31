@@ -2,6 +2,7 @@ import socket
 import threading
 
 from udp_protocol import build_udp_payload, parse_udp_message
+from state import rooms, tokens
 
 SERVER_PORT = 9001
 DEFAULT_SERVER_IP = "127.0.0.1"
@@ -18,8 +19,18 @@ class UDPChatClient:
         self.sock.bind(("0.0.0.0",local_port))
         self.running = True
 
-        # 受信スレッド開始
+    def register_address(self):
+        try:
+            payload = build_udp_payload(self.room_name, self.token, "__REGISTER__")
+            self.sock.sendto(payload, (self.server_ip, self.server_port))
+            local_ip, local_port = self.sock.getsockname()
+            print(f"[登録] 自分のアドレス: {local_ip}:{local_port}")
+        except Exception as e:
+            print(f"[登録エラー] {e}")
+
+    # 受信スレッド
     def start(self):
+        self.register_address()  # アドレス登録のために最初に送信
         threading.Thread(target=self.receive_messages, daemon=True).start()
         print("=== チャットを開始します。Ctrl+Cで終了 ===")
         self.send_loop()
@@ -65,30 +76,36 @@ class UDPChatClient:
         self.sock.close()
 
 def main():
-    # TCPで情報取得してからUDPチャットクライアントを起動する（この後実装）
-    # username, room_name, token = tcp_get_info()
-    # server_ip = "127.0.0.1"
-    # local_port = 50000  # 任意のローカルポートを指定
-    # client = UDPChatClient(username, server_ip, room_name, token, local_port)
-    # client.start()
-    
-    # udp_chat用
     import argparse
 
     parser = argparse.ArgumentParser(description="UDP Chat Client")
-    parser.add_argument("--username", required=True, help="チャット内で使用するユーザー名")
-    parser.add_argument("--server-ip", required=True, help="UDPサーバのIPアドレス")
-    parser.add_argument("--local-port", type=int, required=True, help="このクライアントが使うUDPポート番号")
     parser.add_argument("--token", required=True, help="チャットルーム用の認証トークン")
-    parser.add_argument("--room", required=True, help="チャットルーム名")
     args = parser.parse_args()
 
+    token = args.token
+
+    if token not in tokens:
+        print("エラー: 指定されたトークンが存在しません。")
+        return
+
+    user_info = tokens[token]
+    room_name = user_info["room_name"]
+    username = user_info["username"]
+
+    host_token = rooms[room_name]["host_token"]
+    host_info = tokens.get(host_token)
+    if not host_info:
+        print("エラー: ホスト情報が見つかりません。")
+        return
+    # ポートはOS自動割当
+    local_port = 0
+
     client = UDPChatClient(
-        username=args.username,
-        server_ip=args.server_ip,
-        room_name=args.room,
-        token=args.token,
-        local_port=args.local_port
+        username=username,
+        server_ip=DEFAULT_SERVER_IP,
+        room_name=room_name,
+        token=token,
+        local_port=local_port
     )
     client.start()
 
