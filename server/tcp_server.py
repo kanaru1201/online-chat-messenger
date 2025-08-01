@@ -8,7 +8,7 @@ import threading
 import time
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from tcrp import TCRProtocol, OP_CREATE_ROOM, OP_JOIN_ROOM, STATE_REQUEST
+from server.protocol.tcrp import TCRProtocol, OP_CREATE_ROOM, OP_JOIN_ROOM, STATE_REQUEST
 
 class TCPServer:
     def __init__(self, host, port):
@@ -47,7 +47,7 @@ class TCPServer:
         except Exception as e:
             print(f"サーバー起動エラー: {e}")
 
-    def _handle_client(self, client_socket, address):
+    def _handle_client(self, client_socket,address):
         try:
             op, state, room_name, payload = TCRProtocol.receive_tcrp_message(client_socket)
 
@@ -57,13 +57,13 @@ class TCPServer:
 
             if op == OP_CREATE_ROOM:
                 success, token = self.create_room(room_name, payload, address)
-                print(f"{'作成成功' if success else '既に存在'}: ルーム '{room_name}' (ユーザー: {payload}, Address: {address})")
+                print(f"{'作成成功' if success else '既に存在'}: ルーム '{room_name}' (ユーザー: {payload}")
                 if success:
                     print(f"  → 発行されたトークン: {token}")
                     self.save_to_json()
             elif op == OP_JOIN_ROOM:
                 success, token = self.join_room(room_name, payload, address)
-                print(f"{'参加成功' if success else '参加失敗'}: ルーム '{room_name}' に {payload} 入室 (Address: {address})")
+                print(f"{'参加成功' if success else '参加失敗'}: ルーム '{room_name}' に {payload} 入室")
                 if success:
                     print(f"  → 発行されたトークン: {token}")
                     self.save_to_json()
@@ -79,7 +79,7 @@ class TCPServer:
             print(f"クライアント処理エラー: {e}")
         finally:
             client_socket.close()
-            print(f"[TCP] 切断: {address}")
+            print(f"[TCP] 切断")
 
     def stop(self):
         self.running = False
@@ -97,6 +97,7 @@ class TCPServer:
         return room_name in self.rooms
 
     def create_room(self, room_name, username, address):
+        self.load_from_json()
         if self.room_exists(room_name):
             return False, None
 
@@ -112,32 +113,27 @@ class TCPServer:
             "username": username,
             "room_name": room_name,
             "is_host": True,
-            "address": address
+            "address": None
         }
-
         return True, token
 
     def join_room(self, room_name, username, address):
+        self.load_from_json()
         if not self.room_exists(room_name):
             return False, None
 
         existing_token = self.find_user_token_in_room(room_name, username)
         if existing_token:
-            self.tokens[existing_token]["address"] = address
-            print(f"  既存ユーザー: {username} (Address更新: {address}, トークン: {existing_token})")
             return True, existing_token
 
         token = self.generate_token()
-        
         self.rooms[room_name]["members"].append(token)
-        
         self.tokens[token] = {
             "username": username,
             "room_name": room_name,
             "is_host": False,
-            "address": address
+            "address": None
         }
-
         return True, token
 
     def find_user_token_in_room(self, room_name, username):
@@ -148,24 +144,25 @@ class TCPServer:
             if token in self.tokens and self.tokens[token]["username"] == username:
                 return token
         return None
-
-    def validate_token_and_address(self, token, room_name, address):
-        if token not in self.tokens:
-            return False, "Invalid token"
+    
+# TCPでアドレス登録しないので削除
+    # def validate_token_and_address(self, token, room_name):
+    #     if token not in self.tokens:
+    #         return False, "Invalid token"
         
-        if room_name not in self.rooms:
-            return False, "Room does not exist"
+    #     if room_name not in self.rooms:
+    #         return False, "Room does not exist"
         
-        if token not in self.rooms[room_name]["members"]:
-            return False, "Token not member of this room"
+    #     if token not in self.rooms[room_name]["members"]:
+    #         return False, "Token not member of this room"
         
-        if self.tokens[token]["room_name"] != room_name:
-            return False, "Token belongs to different room"
+    #     if self.tokens[token]["room_name"] != room_name:
+    #         return False, "Token belongs to different room"
         
-        if self.tokens[token]["address"] != address:
-            return False, "Address mismatch"
+    #     # if self.tokens[token]["address"] != address:
+    #     #     return False, "Address mismatch"
         
-        return True, "Valid token and address"
+    #     return True, "Valid token and address"
 
     def get_user_info_by_token(self, token):
         return self.tokens.get(token)
@@ -191,22 +188,24 @@ class TCPServer:
             return self.rooms[room_name]["host_token"]
         return None
 
-    def send_message_validation(self, token, room_name, address, message):
-        is_valid, reason = self.validate_token_and_address(token, room_name, address)
+    # def send_message_validation(self, token, room_name, address, message):
+        # is_valid, reason = self.validate_token_and_address(token, room_name, address)
         
-        if not is_valid:
-            return False, reason
+        # if not is_valid:
+        #     return False, reason
         
-        sender_info = self.tokens[token]
+        # sender_info = self.tokens[token]
         
-        return True, {
-            'sender': sender_info['username'],
-            'room': room_name,
-            'message': message,
-            'timestamp': time.time()
-        }
+        # return True, {
+        #     'sender': sender_info['username'],
+        #     'room': room_name,
+        #     'message': message,
+        #     'timestamp': time.time()
+        # }
 
     def save_to_json(self, filename="room_manager.json"):
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        filepath = os.path.join(base_dir, filename)
         try:
             data = {
                 'rooms': self.rooms,
@@ -214,7 +213,7 @@ class TCPServer:
                 'saved_at': datetime.now().isoformat()
             }
 
-            with open(filename, 'w', encoding='utf-8') as f:
+            with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
             
             print(f"データを {filename} に保存しました")
@@ -225,14 +224,16 @@ class TCPServer:
             return False
 
     def load_from_json(self, filename="room_manager.json"):
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        filepath = os.path.join(base_dir, filename)
         try:
-            with open(filename, 'r', encoding='utf-8') as f:
+            with open(filepath, 'r', encoding='utf-8') as f:
                 data = json.load(f)
 
             self.rooms = data.get('rooms', {})
             self.tokens = data.get('tokens', {})
 
-            print(f"データを {filename} から手動で読み込みました")
+            print(f"データを {filepath} から手動で読み込みました")
             if 'saved_at' in data:
                 print(f"保存日時: {data['saved_at']}")
             
@@ -240,7 +241,7 @@ class TCPServer:
             return True
 
         except FileNotFoundError:
-            print(f"ファイル {filename} が見つかりません")
+            print(f"ファイル {filepath} が見つかりません")
             return False
         except Exception as e:
             print(f"読み込みエラー: {e}")

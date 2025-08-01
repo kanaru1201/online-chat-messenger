@@ -1,8 +1,7 @@
 import socket
 import threading
 
-from udp_protocol import build_udp_payload, parse_udp_message
-from state import rooms, tokens
+from server.protocol.udp_protocol import build_udp_payload, parse_udp_message
 
 SERVER_PORT = 9001
 DEFAULT_SERVER_IP = "127.0.0.1"
@@ -28,9 +27,8 @@ class UDPChatClient:
         except Exception as e:
             print(f"[登録エラー] {e}")
 
-    # 受信スレッド
     def start(self):
-        self.register_address()  # アドレス登録のために最初に送信
+        self.register_address()
         threading.Thread(target=self.receive_messages, daemon=True).start()
         print("=== チャットを開始します。Ctrl+Cで終了 ===")
         self.send_loop()
@@ -72,42 +70,11 @@ class UDPChatClient:
             self.stop()
 
     def stop(self):
+        try:
+            payload = build_udp_payload(self.room_name, self.token, "__LEAVE__")
+            self.sock.sendto(payload, (self.server_ip, self.server_port))
+            print("[退出通知] サーバーに退出メッセージを送りました")
+        except Exception as e:
+            print(f"[退出通知エラー] {e}")
         self.running = False
         self.sock.close()
-
-def main():
-    import argparse
-
-    parser = argparse.ArgumentParser(description="UDP Chat Client")
-    parser.add_argument("--token", required=True, help="チャットルーム用の認証トークン")
-    args = parser.parse_args()
-
-    token = args.token
-
-    if token not in tokens:
-        print("エラー: 指定されたトークンが存在しません。")
-        return
-
-    user_info = tokens[token]
-    room_name = user_info["room_name"]
-    username = user_info["username"]
-
-    host_token = rooms[room_name]["host_token"]
-    host_info = tokens.get(host_token)
-    if not host_info:
-        print("エラー: ホスト情報が見つかりません。")
-        return
-    # ポートはOS自動割当
-    local_port = 0
-
-    client = UDPChatClient(
-        username=username,
-        server_ip=DEFAULT_SERVER_IP,
-        room_name=room_name,
-        token=token,
-        local_port=local_port
-    )
-    client.start()
-
-if __name__ == "__main__":
-    main()
