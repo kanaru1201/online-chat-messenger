@@ -55,7 +55,7 @@ TCPサーバー開始: localhost:9090
 新しいターミナルを開き、クライアントを起動します。
 
 ```bash
-python client/main.py
+python client_main.py
 ```
 
 プロンプトに従い、操作 `1` を選択してルーム名とユーザー名を入力します。
