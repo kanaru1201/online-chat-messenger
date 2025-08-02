@@ -1,8 +1,7 @@
 from client.tcp_client import TCPClient
 from client.udp_chat_client import UDPChatClient
 
-OP_CREATE_ROOM = 1
-OP_JOIN_ROOM = 2
+from server.protocol.tcrp import TCRProtocol, OP_CREATE_ROOM, OP_JOIN_ROOM
 
 def prompt_valid_input(prompt_text):
     while True:
