@@ -1,0 +1,23 @@
+{
+  "rooms": {
+    "room1": {
+      "host_token": "token_15dfd847e206e408ecf91a9b2e499f1a",
+      "members": [
+        "token_15dfd847e206e408ecf91a9b2e499f1a"
+      ],
+      "created_at": 1754108955.404186
+    }
+  },
+  "tokens": {
+    "token_15dfd847e206e408ecf91a9b2e499f1a": {
+      "username": "\"kanaru\"",
+      "room_name": "room1",
+      "is_host": true,
+      "address": [
+        "127.0.0.1",
+        50743
+      ]
+    }
+  },
+  "saved_at": "2025-08-02T13:33:56.381279"
+}

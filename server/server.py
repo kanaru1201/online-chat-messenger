@@ -1,8 +1,11 @@
 import threading
 
+from room_manager import RoomManager
 from tcp_server import TCPServer
 
 def main():
+    room_manager = RoomManager()
+
     host = input("ホスト名 (デフォルト: localhost): ").strip() or "localhost"
 
     port_str = input("ポート番号 (デフォルト: 9090): ").strip()
@@ -15,16 +18,16 @@ def main():
     else:
         port = 9090
 
-    server = TCPServer(host, port)
+    tcp_server = TCPServer(host, port, room_manager)
 
-    thread = threading.Thread(target=server.start, daemon=False)
+    thread = threading.Thread(target=tcp_server.start, daemon=False)
     thread.start()
 
     try:
         thread.join()
     except KeyboardInterrupt:
         print("\nCtrl+Cで停止")
-        server.stop()
+        tcp_server.stop()
         thread.join()
         print("サーバー停止完了")
 
