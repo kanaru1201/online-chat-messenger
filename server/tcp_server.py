@@ -1,22 +1,20 @@
-import socket
-import threading
-import sys
 import os
-import secrets
+import socket
+import sys
+import threading
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from tcrp import TCRProtocol, OP_CREATE_ROOM, OP_JOIN_ROOM, STATE_REQUEST
+from server.protocol.tcrp import TCRProtocol, OP_CREATE_ROOM, OP_JOIN_ROOM, STATE_REQUEST
 
 class TCPServer:
-    def __init__(self, host, port):
+    def __init__(self, host, port, room_manager):
         self.host = host
         self.port = port
         self.socket = None
         self.running = False
-        self.rooms = {}
-        self.tokens = {}
-        self.room_tokens = {}
-        self.user_tokens = {}
+        self.room_manager = room_manager
+        
+        print(f"TCPサーバー初期化: {host}:{port}")
 
     def start(self):
         try:
@@ -31,7 +29,8 @@ class TCPServer:
                 try:
                     client_socket, address = self.socket.accept()
                     print(f"[TCP] 接続: {address}")
-                    threading.Thread(target=self._handle_client, args=(client_socket, address), daemon=True).start()
+                    thread = threading.Thread(target=self._handle_client, args=(client_socket, address), daemon=True)
+                    thread.start()
                 except OSError:
                     break
                 except Exception as e:
@@ -39,7 +38,7 @@ class TCPServer:
         except Exception as e:
             print(f"サーバー起動エラー: {e}")
 
-    def _handle_client(self, client_socket, address):
+    def _handle_client(self, client_socket,address):
         try:
             op, state, room_name, payload = TCRProtocol.receive_tcrp_message(client_socket)
 
@@ -48,11 +47,17 @@ class TCPServer:
                 return
 
             if op == OP_CREATE_ROOM:
-                success, token = self.create_room(room_name, payload)
-                print(f"{'作成成功' if success else '既に存在'}: ルーム '{room_name}'")
+                success, token = self.room_manager.create_room(room_name, payload, address)
+                print(f"{'作成成功' if success else '既に存在'}: ルーム '{room_name}' (ユーザー: {payload}, Address: {address})")
+                if success:
+                    print(f"  → 発行されたトークン: {token}")
+                    self.room_manager.save_to_json()
             elif op == OP_JOIN_ROOM:
-                success, token = self.join_room(room_name, payload)
-                print(f"{'参加成功' if success else '参加失敗'}: ルーム '{room_name}' に {payload} 入室")
+                success, token = self.room_manager.join_room(room_name, payload, address)
+                print(f"{'参加成功' if success else '参加失敗'}: ルーム '{room_name}' に {payload} 入室 (Address: {address})")
+                if success:
+                    print(f"  → 発行されたトークン: {token}")
+                    self.room_manager.save_to_json()
             else:
                 print(f"その操作コードは使えません（コード: {op}）")
                 return
@@ -65,7 +70,7 @@ class TCPServer:
             print(f"クライアント処理エラー: {e}")
         finally:
             client_socket.close()
-            print(f"[TCP] 切断: {address}")
+            print(f"[TCP] 切断")
 
     def stop(self):
         self.running = False
@@ -73,39 +78,15 @@ class TCPServer:
             self.socket.close()
             self.socket = None
             print("ソケット閉じた")
+        
+        self.room_manager.save_to_json()
 
-    def generate_token(self):
-        return secrets.token_hex(16)
-
-    def room_exists(self, room_name):
-        return room_name in self.rooms
-
-    def create_room(self, room_name, username):
-        if self.room_exists(room_name):
-            return False, None
-
-        token = self.generate_token()
-        self.rooms[room_name] = {
-            'host': username,
-            'members': [username],
-            'tokens': [token]
-        }
-        self.tokens[token] = (room_name, username, True, None)
-        self.room_tokens[room_name] = [token]
-        self.user_tokens[(room_name, username)] = token
-
-        return True, token
-
-    def join_room(self, room_name, username):
-        if not self.room_exists(room_name):
-            return False, None
-
-        if (room_name, username) in self.user_tokens:
-            return True, self.user_tokens[(room_name, username)]
-
-        token = self.room_tokens[room_name][0]
-        self.rooms[room_name]['members'].append(username)
-        self.tokens[token] = (room_name, username, False, None)
-        self.user_tokens[(room_name, username)] = token
-
-        return True, token
+if __name__ == "__main__":
+    server = TCPServer("localhost", 9090)
+    
+    try:
+        server.start()
+    except KeyboardInterrupt:
+        print("\nサーバーを停止しています...")
+        server.stop()
+        print("サーバーが停止しました")

@@ -1,5 +1,5 @@
-import struct
 import json
+import struct
 
 OP_CREATE_ROOM = 1
 OP_JOIN_ROOM = 2
