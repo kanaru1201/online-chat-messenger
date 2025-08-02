@@ -1,7 +1,7 @@
-import socket
-import sys
 import json
 import os
+import socket
+import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from tcrp import TCRProtocol, OP_CREATE_ROOM, OP_JOIN_ROOM, STATE_REQUEST, STATE_COMPLIANCE, STATE_COMPLETE
