@@ -1,26 +1,29 @@
 import threading
 import time
+from server.room_manager import RoomManager
 from server.tcp_server import TCPServer
 from server.udp_chat_server import UDPChatServer
 
-def run_tcp_server():
-    tcp_server = TCPServer("localhost", 9090)
+def run_tcp_server(room_manager):
+    tcp_server = TCPServer("localhost", 9090,room_manager)
     try:
         tcp_server.start()
     except KeyboardInterrupt:
         print("[TCP] Ctrl+Cで停止")
-        tcp_server.stop()
+        tcp_server.stop(room_manager)
 
-def run_udp_server():
-    udp_server = UDPChatServer("localhost", 9001)
+def run_udp_server(room_manager):
+    udp_server = UDPChatServer("localhost", 9001,room_manager)
     try:
         udp_server.start()
     except KeyboardInterrupt:
         print("[UDP] Ctrl+Cで停止")
 
 def main():
-    tcp_thread = threading.Thread(target=run_tcp_server, daemon=True)
-    udp_thread = threading.Thread(target=run_udp_server, daemon=True)
+    room_manager = RoomManager()
+
+    tcp_thread = threading.Thread(target=run_tcp_server, args=(room_manager,), daemon=True)
+    udp_thread = threading.Thread(target=run_udp_server, args=(room_manager,), daemon=True)
 
     tcp_thread.start()
     udp_thread.start()

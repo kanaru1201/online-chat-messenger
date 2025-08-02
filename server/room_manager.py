@@ -82,12 +82,16 @@ class RoomManager:
         
         if token not in self.rooms[room_name]["members"]:
             return False, "トークンがこのルームのメンバーではありません"
+        token_info = self.tokens[token]
         
-        if self.tokens[token]["room_name"] != room_name:
-            return False, "トークンが別のルームに属しています"
+        if token_info["room_name"] != room_name:
+            return False, "トークンのルーム名が一致しません"
         
-        if self.tokens[token]["address"] != address:
-            return False, "アドレスが一致しません"
+        if "address" not in token_info or token_info["address"] is None:
+            return False, "トークンのアドレスが未登録です"
+        
+        if tuple(address) != tuple(token_info["address"]):
+            return False, "[拒否] アドレスが一致しません"
         
         return True, "有効なトークンとアドレスです"
 
@@ -187,3 +191,30 @@ class RoomManager:
                     print(f"    {token} → {token_info['username']} ({role}) [アドレス: {token_info['address']}]")
 
         print(f"\n総トークン数: {len(self.tokens)}")
+
+    def delete_room_if_host_left(self, room_name, token):
+        tokens = self.tokens
+        rooms = self.rooms
+        token_info = tokens.get(token)
+        if not token_info:
+            print(f"未知のトークン: {token}")
+            return None
+        room_name = token_info["room_name"]
+        if rooms.get(room_name, {}).get("host_token") == token:
+            print(f"ホスト {token_info['username']} のため、ルーム {room_name} を削除します")
+            for member_token in rooms[room_name]["members"]:
+                if member_token in tokens:
+                    del tokens[member_token]
+            del rooms[room_name]
+            self.save_to_json()
+            print(f"ルーム {room_name} と全トークンを削除しました")
+            return None
+        else:
+            print(f"{token_info['username']} がルーム {room_name} から退出します")
+            if token in rooms[room_name]["members"]:
+                rooms[room_name]["members"].remove(token)
+            if token in tokens:
+                del tokens[token]
+            self.save_to_json()
+            print(f"{token_info['username']} のトークンとメンバー情報を削除しました")
+            return None

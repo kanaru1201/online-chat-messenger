@@ -42,11 +42,9 @@ class UDPChatClient:
                 sender, message = parse_udp_message(data)
                 print(f"\n{sender}: {message}\n> ", end="")
             except Exception as e:
+                if not self.running:
+                    break
                 print(f"[受信エラー] {e}")
-                break
-            except KeyboardInterrupt:  
-                print("\n[終了] チャットを終了します。")
-                self.stop()
                 break
 
     def send_loop(self):
