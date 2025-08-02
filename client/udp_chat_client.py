@@ -40,7 +40,7 @@ class UDPChatClient:
                 if not data:
                     continue
                 sender, message = parse_udp_message(data)
-                print(f"\n{sender}: {message}\n> ", end="")
+                print(f"{sender}: {message}\n> ", end="")
             except Exception as e:
                 if not self.running:
                     break
