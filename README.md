@@ -108,18 +108,18 @@ Kanaru: こんにちは！
 
 ```
 .
-├── main.py                 # サーバーサイドのメインエントリポイント（TCP/UDPサーバー起動）
 ├── server/                 # サーバーサイド関連のコード
-│   ├── tcp_server.py       # TCPサーバーの実装（ルーム管理、トークン発行）
+│   ├── main.py             # サーバーサイドのメインエントリポイント（TCP/UDPサーバー起動）
 │   ├── udp_chat_server.py  # UDPサーバーの実装（チャットメッセージ中継、クライアントアドレス登録）
 │   ├── room_manager.json   # サーバーがルームとトークンの情報を保存するJSONファイル（実行時に生成）
-│   └── protocol/           # 通信プロトコル関連
-│       ├── tcrp.py         # TCP通信用のプロトコル定義（TCRProtocol）
-│       └── udp_protocol.py # UDP通信用のプロトコル定義
+|   └── tcp_server.py       # TCPサーバーの実装（ルーム管理、トークン発行）
 └── client/                 # クライアントサイド関連のコード
-    ├── main.py             # クライアントサイドのメインエントリポイント
-    ├── tcp_client.py       # TCPクライアントの実装（ルーム作成・参加、トークン取得）
-    └── udp_chat_client.py  # UDPチャットクライアントの実装（メッセージ送受信、アドレス登録）
+|   ├── client_main.py      # クライアントサイドのメインエントリポイント
+|   ├── tcp_client.py       # TCPクライアントの実装（ルーム作成・参加、トークン取得）
+|   └── udp_chat_client.py  # UDPチャットクライアントの実装（メッセージ送受信、アドレス登録）
+└── protocol/               # 通信プロトコル関連
+    ├── tcrp.py             # TCP通信用のプロトコル定義（TCRProtocol）
+    └── udp_protocol.py     # UDP通信用のプロトコル定義
 ```
 
 
