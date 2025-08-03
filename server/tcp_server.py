@@ -1,29 +1,29 @@
+import threading
 import os
 import socket
 import sys
-import threading
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from tcrp import TCRProtocol, OP_CREATE_ROOM, OP_JOIN_ROOM, STATE_REQUEST
+from protocol.tcrp import TCRProtocol, OP_CREATE_ROOM, OP_JOIN_ROOM, STATE_REQUEST
 
-class TCPServer:
-    def __init__(self, host, port, room_manager):
+class TCP_Create_Join_Server:
+    def __init__(self, host, tcp_port, room_manager):
         self.host = host
-        self.port = port
+        self.tcp_port = tcp_port
         self.socket = None
         self.running = False
         self.room_manager = room_manager
         
-        print(f"TCPサーバー初期化: {host}:{port}")
+        print(f"TCPサーバー初期化: {host}:{tcp_port}")
 
     def start(self):
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            self.socket.bind((self.host, self.port))
+            self.socket.bind((self.host, self.tcp_port))
             self.socket.listen()
             self.running = True
-            print(f"TCPサーバー開始: {self.host}:{self.port}")
+            print(f"TCPサーバー開始: {self.host}:{self.tcp_port}")
 
             while self.running:
                 try:
@@ -36,7 +36,7 @@ class TCPServer:
                 except Exception as e:
                     print(f"接続処理エラー: {e}")
         except Exception as e:
-            print(f"サーバー起動エラー: {e}")
+            print(f"TCPサーバー起動エラー: {e}")
 
     def _handle_client(self, client_socket, address):
         try:
@@ -77,16 +77,4 @@ class TCPServer:
         if self.socket:
             self.socket.close()
             self.socket = None
-            print("ソケット閉じた")
-        
-        self.room_manager.save_to_json()
-
-if __name__ == "__main__":
-    server = TCPServer("localhost", 9090)
-    
-    try:
-        server.start()
-    except KeyboardInterrupt:
-        print("\nサーバーを停止しています...")
-        server.stop()
-        print("サーバーが停止しました")
+            print("TCPサーバー停止")
