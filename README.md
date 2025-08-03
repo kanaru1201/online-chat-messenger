@@ -62,8 +62,8 @@ python client_main.py
 
 ```
 操作（1: 作成, 2: 参加）: 1
-ルーム名: my-awesome-room
-ユーザー名: alice
+ルーム名: room1
+ユーザー名: Kanaru
 ```
 
 成功するとトークンが発行され、チャット入力待機状態になります。
@@ -72,7 +72,8 @@ python client_main.py
 [TCP] トークン取得成功: token_a1b2c3d4e5f6g7h8
 ...
 === チャットを開始します。Ctrl+Cで終了 ===
-> ```
+>
+```
 
 ### 3. 別のクライアントでルームに参加する（2人目以降）
 
@@ -86,8 +87,8 @@ python client_main.py
 
 ```
 操作（1: 作成, 2: 参加）: 2
-ルーム名: my-awesome-room
-ユーザー名: bob
+ルーム名: room1
+ユーザー名: Hiroki
 ```
 
 これで、同じルームに参加しているメンバー間でチャットができます。
@@ -95,7 +96,7 @@ python client_main.py
 ```
 > こんにちは！
 
-alice: こんにちは！
+Kanaru: こんにちは！
 > 
 ```
 
