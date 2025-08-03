@@ -7,9 +7,7 @@ TCPでルーム作成、参加を行い、UDPでチャットメッセージを�
 
 ## デモ
 
-（ここに、ルームを作成し、別のクライアントが参加してチャットする様子を示すアニメーション、または写真を挿入）
-
-
+[![Online-Chat-Messenger](https://img.youtube.com/vi/Qref4Lx3Rug/0.jpg)](https://youtu.be/Qref4Lx3Rug)
 
 
 ## 主な機能
@@ -40,7 +38,7 @@ TCPでルーム作成、参加を行い、UDPでチャットメッセージを�
 まず、サーバーを起動してクライアントからの接続を待ち受けます。
 
 ```bash
-python main.py
+python -m server.main
 ```
 
 成功すると、以下のようなログが表示されます。
@@ -55,7 +53,7 @@ TCPサーバー開始: localhost:9090
 新しいターミナルを開き、クライアントを起動します。
 
 ```bash
-python client_main.py
+python -m client.client_main
 ```
 
 プロンプトに従い、操作 `1` を選択してルーム名とユーザー名を入力します。
@@ -80,7 +78,7 @@ python client_main.py
 さらに別のターミナルを開き、同様にクライアントを起動します。
 
 ```bash
-python client_main.py
+python -m client.client_main
 ```
 
 今度は操作 `2` を選択し、先ほど作成したルーム名と、あなたのユーザー名を入力します。
