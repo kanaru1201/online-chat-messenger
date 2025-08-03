@@ -44,7 +44,7 @@ class UDP_Chat_Server:
                 return
             
             if content == "__JOIN__":
-                print(f"UDP参加: {username} がルーム '{room_name}' に参加")
+                print(f"[UDP] 接続: {username} がルーム '{room_name}' に参加")
                 
                 confirmation = f"ルーム '{room_name}' への参加が完了しました。"
                 self.udp_sock.sendto(confirmation.encode('utf-8'), client_addr)

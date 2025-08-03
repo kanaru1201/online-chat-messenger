@@ -17,7 +17,7 @@ class UDP_Chat_Client:
             server_addr = (self.host, self.port)
 
             join_packet = f"{room_name}|{token}|{username}|__JOIN__"
-            print(f"参加パケット送信: {join_packet}")
+            print(f"接続パケット送信: {join_packet}")
             udp_sock.sendto(join_packet.encode('utf-8'), server_addr)
             
             if is_creator:

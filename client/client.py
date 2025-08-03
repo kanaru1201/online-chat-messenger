@@ -11,6 +11,7 @@ class Client:
         try:
             while True:
                 print("\n=== クライアント ===")
+                print(f"\n--- TCP接続フェーズ ---")
                 print("1. ルーム作成")
                 print("2. ルーム参加")
                 print("3. 終了")
@@ -55,8 +56,9 @@ class Client:
                 print(f"TCP認証成功。トークン取得完了")
                 
                 self.tcp_client.disconnect()
+                print("TCPソケットを閉じました")
                 
-                print(f"\n--- UDP参加フェーズ ---")
+                print(f"\n--- UDP接続フェーズ ---")
                 join_success = False
                 if choice == '1':
                     join_success = self.udp_client.create_and_enter_room(room_name, username, token)
