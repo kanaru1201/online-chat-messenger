@@ -1,6 +1,6 @@
 import json
-import socket
 import os
+import socket
 import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -17,7 +17,7 @@ class TCP_Create_Join_Client:
         try:
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.client_socket.connect((self.host, self.port))
-            print(f"接続成功: {self.host}:{self.port}")
+            print(f"TCP接続に成功しました")
             return True
         except Exception as e:
             print(f"サーバーに接続できません: {e}")
@@ -56,7 +56,6 @@ class TCP_Create_Join_Client:
             if state_f == STATE_COMPLETE:
                 complete_result = json.loads(payload_f)
                 self.token = complete_result.get("token")
-                print(f"トークン受信: {self.token}")
                 return True
             else:
                 print("完了応答が受信できませんでした")

@@ -1,7 +1,7 @@
-import threading
 import os
 import socket
 import sys
+import threading
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from protocol.tcrp import TCRProtocol, OP_CREATE_ROOM, OP_JOIN_ROOM, STATE_REQUEST
@@ -23,7 +23,7 @@ class TCP_Create_Join_Server:
             self.socket.bind((self.host, self.tcp_port))
             self.socket.listen()
             self.running = True
-            print(f"TCPサーバー開始: {self.host}:{self.tcp_port}")
+            print(f"[起動] TCPサーバーを {self.host}:{self.tcp_port} にバインドしました")
 
             while self.running:
                 try:

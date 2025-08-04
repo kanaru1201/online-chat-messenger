@@ -1,0 +1,33 @@
+{
+  "rooms": {
+    "room1": {
+      "host_token": "token_952eb5c64def959cf531ab68f304a248",
+      "members": [
+        "token_952eb5c64def959cf531ab68f304a248",
+        "token_6c7b0f3aa46af569066278600fda8919"
+      ],
+      "created_at": 1754314861.274079
+    }
+  },
+  "tokens": {
+    "token_952eb5c64def959cf531ab68f304a248": {
+      "username": "\"hiroki\"",
+      "room_name": "room1",
+      "is_host": true,
+      "address": [
+        "127.0.0.1",
+        54995
+      ]
+    },
+    "token_6c7b0f3aa46af569066278600fda8919": {
+      "username": "\"kanaru\"",
+      "room_name": "room1",
+      "is_host": false,
+      "address": [
+        "127.0.0.1",
+        52223
+      ]
+    }
+  },
+  "saved_at": "2025-08-04T22:41:16.188831"
+}
