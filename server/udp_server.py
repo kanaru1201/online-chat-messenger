@@ -19,12 +19,8 @@ class UDP_Chat_Server:
         self.udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udp_sock.bind((self.host, self.udp_port))
         self.running = True
-        print(f"[起動] UDPサーバーを {self.host}:{self.udp_port} にバインドしました\n")
 
     def start(self):
-        self.bind()
-        print("UDPチャットサーバーが起動しました。メッセージを待っています...\n")
-
         while self.running:
             try:
                 data, address = self.udp_sock.recvfrom(MAX_MESSAGE_SIZE)
@@ -52,18 +48,23 @@ class UDP_Chat_Server:
             if token in tokens:
                 tokens[token]["address"] = address
                 self.room_manager.save_to_json()
-                print(f"[登録] トークン {token[:8]}... にアドレス {address} を登録しました\n")
+                print(f"[登録] トークン{token[:8]}...にアドレス{address}を登録しました\n")
             else:
                 print(f"[登録拒否] 未知のトークン {token[:8]}...")
             return
 
-        if message == "__JOIN__":
-            if self.room_manager.validate_token_and_address(token, room_name)[0]:
-                confirmation = f"ルーム '{room_name}' に参加しました"
-                self.udp_sock.sendto(confirmation.encode('utf-8'), address)
-                print(f"[JOIN] {token[:8]}... がルーム {room_name} に参加しました")
-            else:
-                print(f"[JOIN失敗] バリデーションエラー: token={token[:8]}...")
+        if message == "__LEAVE__":
+            if token in tokens and room_name in rooms:
+                is_host = (rooms[room_name].get("host_token") == token)
+                if is_host:
+                    username = tokens[token]['username'].strip('"')
+                    print(f"[ホスト退出] {repr(username)} がルーム'{room_name}'から退出します")
+                    self.notify_room_closed(room_name, excluded_tokens=[token])
+
+            self.room_manager.delete_room_if_host_left(room_name, token)
+            self.room_manager.save_to_json()
+            print(f"[退出処理] {token[:8]}...")
+            print()
             return
 
         is_valid, reason = self.room_manager.validate_token_and_address(token, room_name)
@@ -92,9 +93,55 @@ class UDP_Chat_Server:
             try:
                 payload = build_udp_message(sender, message)
                 self.udp_sock.sendto(payload, addr)
-                print(f"[送信] {tokens[member_token]['username']} へ: {message}")
+                username = tokens[token]['username'].strip('"')
+                print(f"[送信] {repr(username)} へ: {message}")
             except Exception as e:
-                print(f"[送信エラー] {tokens[member_token]['username']}: {e}")
+                username = tokens[token]['username'].strip('"')
+                print(f"[送信エラー] {repr(username)}: {e}")
+
+    def notify_room_closed(self, room_name, excluded_tokens=None):
+        if excluded_tokens is None:
+            excluded_tokens = []
+
+        rooms = self.room_manager.rooms
+        tokens = self.room_manager.tokens
+
+        if room_name not in rooms:
+            print(f"[通知エラー] ルーム'{room_name}'が存在しません")
+            return
+
+        members = rooms[room_name]["members"]
+        print(f"[ルーム終了通知] ルーム'{room_name}'の{len(members)}人のメンバーに通知を送信します")
+
+        notification_count = 0
+        for member_token in members:
+            if member_token in excluded_tokens:
+                continue
+
+            if member_token not in tokens:
+                print(f"[警告] トークン{member_token[:8]}... が見つかりません")
+                continue
+
+            addr = tokens[member_token].get("address")
+            if not addr:
+                username = tokens[member_token]['username'].strip('"')
+                print(f"[警告] {repr(username)} のアドレスが未登録")
+                continue
+
+            if isinstance(addr, list):
+                addr = tuple(addr)
+
+            try:
+                system_message = "__ROOM_CLOSED__"
+                self.udp_sock.sendto(system_message.encode('utf-8'), addr)
+                notification_count += 1
+                username = tokens[member_token]['username'].strip('"')
+                print(f"[通知] {repr(username)}({addr}) に終了通知を送信")
+            except Exception as e:
+                username = tokens[member_token]['username'].strip('"')
+                print(f"[通知エラー] {repr(username)} ({addr}): {e}")
+
+        print(f"[通知完了] {notification_count}人に送信しました\n")
 
     def stop(self):
         self.running = False
