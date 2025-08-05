@@ -34,7 +34,7 @@ def main():
     udp_server = UDP_Chat_Server(host, udp_port, room_manager)
 
     tcp_thread = threading.Thread(target=tcp_server.start, daemon=False)
-    udp_thread = threading.Thread(target=udp_server.bind, daemon=False)
+    udp_thread = threading.Thread(target=udp_server.start, daemon=False)
     
     tcp_thread.start()
     udp_thread.start()

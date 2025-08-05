@@ -127,3 +127,32 @@ class RoomManager:
         except Exception as e:
             print(f"読み込みエラー: {e}")
             return False
+        
+    def delete_room_if_host_left(self, room_name, token):
+        tokens = self.tokens
+        rooms = self.rooms
+        token_info = tokens.get(token)
+
+        if not token_info:
+            print(f"未知のトークン: {token}")
+            return None
+        room_name = token_info["room_name"]
+
+        if rooms.get(room_name, {}).get("host_token") == token:
+            print(f"ホスト {token_info['username']} のため、ルーム{room_name}を削除します")
+            for member_token in rooms[room_name]["members"]:
+                if member_token in tokens:
+                    del tokens[member_token]
+            del rooms[room_name]
+            self.save_to_json()
+            print(f"ルーム {room_name} と全トークンを削除しました")
+            return None
+        else:
+            print(f"{token_info['username']} がルーム{room_name}から退出します")
+            if token in rooms[room_name]["members"]:
+                rooms[room_name]["members"].remove(token)
+            if token in tokens:
+                del tokens[token]
+            self.save_to_json()
+            print(f"{token_info['username']} のトークンとメンバー情報を削除しました")
+            return None
