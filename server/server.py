@@ -33,22 +33,27 @@ def main():
     tcp_server = TCP_Create_Join_Server(host, tcp_port, room_manager)
     udp_server = UDP_Chat_Server(host, udp_port, room_manager)
 
+    tcp_server.bind()
+    udp_server.bind()
+
+    print(f"[起動] TCPサーバーを {host}:{tcp_port} にバインドしました")
+    print(f"[起動] UDPサーバーを {host}:{udp_port} にバインドしました\n")
+    print("UDPチャットサーバーが起動しました。メッセージを待っています...")
+
     tcp_thread = threading.Thread(target=tcp_server.start, daemon=False)
     udp_thread = threading.Thread(target=udp_server.start, daemon=False)
-    
+
     tcp_thread.start()
     udp_thread.start()
 
-    print(f"サーバー開始完了:")
-    print(f"  TCP: {host}:{tcp_port}")
-    print(f"  UDP: {host}:{udp_port}")
     print("Ctrl+Cで停止...")
+    print()
 
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        print("\nCtrl+Cで停止")
+        print("\nCtrl+Cが検出されたので停止します")
         tcp_server.stop()
         udp_server.stop()
         tcp_thread.join()

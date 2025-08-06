@@ -72,7 +72,8 @@ class RoomManager:
         existing_token = self.find_user_token_in_room(room_name, username)
         if existing_token:
             self.tokens[existing_token]["address"] = address
-            print(f"  既存ユーザー: {username} (アドレス更新: {address}, トークン: {existing_token})")
+            username = username.strip('"')
+            print(f"既存ユーザー: {repr(username)} (アドレス更新: {address}, トークン: {existing_token})")
             return True, existing_token
 
         token = self.generate_token()
@@ -99,7 +100,7 @@ class RoomManager:
             with open(filename, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
             
-            print(f"データを {filename} に保存しました")
+            print(f"データを{filename}に保存しました")
             return True
 
         except Exception as e:
@@ -114,7 +115,7 @@ class RoomManager:
             self.rooms = data.get('rooms', {})
             self.tokens = data.get('tokens', {})
 
-            print(f"データを {filename} から手動で読み込みました")
+            print(f"データを{filename}から手動で読み込みました")
             if 'saved_at' in data:
                 print(f"保存日時: {data['saved_at']}")
             
@@ -122,7 +123,7 @@ class RoomManager:
             return True
 
         except FileNotFoundError:
-            print(f"ファイル {filename} が見つかりません")
+            print(f"ファイル{filename}が見つかりません")
             return False
         except Exception as e:
             print(f"読み込みエラー: {e}")
@@ -139,20 +140,20 @@ class RoomManager:
         room_name = token_info["room_name"]
 
         if rooms.get(room_name, {}).get("host_token") == token:
-            print(f"ホスト {token_info['username']} のため、ルーム{room_name}を削除します")
+            username = token_info['username'].strip('"')
+            print(f"ホスト{repr(username)}のため、ルーム'{room_name}'を削除します")
             for member_token in rooms[room_name]["members"]:
                 if member_token in tokens:
                     del tokens[member_token]
             del rooms[room_name]
-            self.save_to_json()
-            print(f"ルーム {room_name} と全トークンを削除しました")
+            print(f"ルーム'{room_name}'全トークンを削除しました")
             return None
         else:
-            print(f"{token_info['username']} がルーム{room_name}から退出します")
+            username = token_info['username'].strip('"')
+            print(f"{repr(username)} がルーム'{room_name}'から退出します")
             if token in rooms[room_name]["members"]:
                 rooms[room_name]["members"].remove(token)
             if token in tokens:
                 del tokens[token]
-            self.save_to_json()
-            print(f"{token_info['username']} のトークンとメンバー情報を削除しました")
+            print(f"{repr(username)}のトークンとメンバー情報を削除しました")
             return None

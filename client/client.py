@@ -55,16 +55,19 @@ class Client:
 
         success = False
         if choice == '1':
+            print(f"ルーム'{room_name}'を作成中...")
             success = self.tcp_client.create_room(room_name, username)
         elif choice == '2':
+            print(f"ルーム'{room_name}'に参加中...")
             success = self.tcp_client.join_room(room_name, username)
 
         if not success:
             print("[エラー] トークン取得失敗")
+            self.tcp_client.disconnect()
             return False
 
         token = self.tcp_client.get_token()
-        print(f"トークン取得成功")
+        print("トークン取得成功")
         self.tcp_client.disconnect()
         print("TCP接続を切断しました")
 

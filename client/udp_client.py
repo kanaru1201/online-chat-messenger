@@ -34,10 +34,22 @@ class UDP_Chat_Client:
                 data, _ = self.sock.recvfrom(MAX_MESSAGE_SIZE)
                 if not data:
                     continue
+
+                try:
+                    text = data.decode("utf-8")
+                    if text == "__ROOM_CLOSED__":
+                        print(f"\n[システム通知] ルーム'{self.room_name}'のホストが退出したため、チャットを終了します")
+                        self.running = False
+                        self.sock.close()
+                        os._exit(0)
+                except UnicodeDecodeError:
+                    pass
+
                 sender, message = parse_udp_message(data)
                 if sender != self.username:
                     print(f"{sender}: {message}")
                     print("> ", end="", flush=True)
+                    
             except OSError as e:
                 if not self.running:
                     break
@@ -62,11 +74,26 @@ class UDP_Chat_Client:
         except KeyboardInterrupt:
             print("\nチャットを終了します")
         finally:
-            self.running = False
-            self.sock.close()
+            self.stop()
 
     def start(self):
         self.register()
         threading.Thread(target=self.receive_messages, daemon=True).start()
         print("=== チャット開始 === (Ctrl+C または exit/q で終了)")
         self.send_loop()
+
+    def stop(self):
+        if not self.running:
+            return
+        try:
+            payload = build_udp_payload(self.room_name, self.token, "__LEAVE__")
+            self.sock.sendto(payload, (self.server_ip, self.server_port))
+            print("[退出通知] サーバーに退出メッセージを送りました")
+        except Exception as e:
+            print(f"[退出通知エラー] {e}")
+        self.running = False
+        if self.sock:
+            try:
+                self.sock.close()
+            except:
+                pass
